@@ -24,7 +24,7 @@ export OSSDPResult, Problem, OSSDPSettings, ScaleMatrices, Cone, WorkSpace
 
 
   # product of cones dimensions, similar to SeDuMi
-  struct Cone
+  mutable struct Cone
     # number of zero  components
     f::Int64
     # number of nonnegative components
@@ -33,6 +33,8 @@ export OSSDPResult, Problem, OSSDPSettings, ScaleMatrices, Cone, WorkSpace
     q::Array{Int64}
     # dimension of positive semidefinite (psd) constraints
     s::Array{Int64}
+    b_l::Array{Float64}
+    b_u::Array{Float64}
 
     #constructor
     function Cone(f::Int64,l::Int64,q,s)
@@ -41,7 +43,10 @@ export OSSDPResult, Problem, OSSDPSettings, ScaleMatrices, Cone, WorkSpace
       (length(s) == 1 && s[1] == 0) && (s = [])
       (length(q) > 0 && minimum(q) <= 0) && error("Cone dimensions in K.q have to be positive integers.")
       (length(s) > 0 && minimum(s) <= 0) && error("Cone dimension in K.s have to be positive integers.")
-      new(f,l,q,s)
+      new(f,l,q,s,[],[])
+    end
+    function Cone(b_l::Array{Float64},b_u::Array{Float64})
+      new(0,0,[],[],b_l,b_u)
     end
   end
  mutable struct Info
@@ -76,9 +81,11 @@ export OSSDPResult, Problem, OSSDPSettings, ScaleMatrices, Cone, WorkSpace
       typeof(q) == SparseVector{Float64,Int64} && (q = full(q))
 
       # check that number of cone variables provided in K add up
+      #=
       isempty(K.q) ? nq = 0 :  (nq = sum(K.q) )
       isempty(K.s) ? ns = 0 :  (ns = sum(K.s) )
       (K.f + K.l + nq + ns ) != m && error("Problem dimension doesnt match cone sizes provided in K.")
+      =#
       # FIXME: prevent copying of data for better performance
       new(copy(P),copy(q),copy(A),copy(b),m,n,K,[0.],Info([0.]),0)
       #new(P,q,A,b,m,n,K) using this seems to change the input data of main solveSDP function

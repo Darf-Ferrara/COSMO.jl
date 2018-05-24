@@ -21,7 +21,7 @@ function admmStep!(x, s, μ, ν, x_tl, s_tl, ls, F, q, b, K, ρ, α, σ, m, n)
     ls[i] = σ*x[i]-q[i]
   end
   for i=1:m
-    ls[n+i] = b[i]-s[i]+μ[i]/ρ[i]
+    ls[n+i] = s[i]-μ[i]/ρ[i]
   end
   # Solve linear system
   ls = F \ ls
@@ -30,7 +30,7 @@ function admmStep!(x, s, μ, ν, x_tl, s_tl, ls, F, q, b, K, ρ, α, σ, m, n)
   @. ν = ls[n+1:end]
   # Over relaxation
   @. x = α*x_tl + (1.0-α)*x
-  @. s_tl = s - (ν+μ)./ρ
+  @. s_tl = s + (ν-μ)./ρ
   @. s_tl = α*s_tl + (1.0-α)*s
   @. s = s_tl + μ./ρ
   # Project
@@ -88,14 +88,13 @@ end
 
       # compute residuals (based on optimality conditions of the problem) to check for termination condition
       # compute them every {settings.checkTermination} step
-      mod(iter,settings.checkTermination)  == 0 && ((r_prim,r_dual) = calculateResiduals(ws,settings))
-
       # check convergence with residuals every {settings.checkIteration} steps
-      if mod(iter,settings.checkTermination) == 0
+      if mod(iter,settings.checkTermination) == 0 || iter == 1
+        (r_prim,r_dual) = calculateResiduals(ws,settings)
         # update cost
         cost = ws.sm.cinv*(1/2 * ws.x'*ws.p.P*ws.x + ws.p.q'*ws.x)[1]
         # print iteration steps
-        settings.verbose && settings. printIteration(settings,iter,cost,r_prim,r_dual)
+        settings.verbose && printIteration(settings,iter,cost,r_prim,r_dual)
 
         if hasConverged(ws,settings,r_prim,r_dual)
           status = :solved

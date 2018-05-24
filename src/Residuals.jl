@@ -4,13 +4,13 @@ module Residuals
 
   function calculateResiduals(ws::OSSDPTypes.WorkSpace,settings::OSSDPTypes.OSSDPSettings, IGNORESCALING_FLAG::Bool=false)
         if (settings.scaling != 0 && !IGNORESCALING_FLAG)
-          r_prim = norm(ws.sm.Einv*(ws.p.A*ws.x+ws.s-ws.p.b),Inf)
+          r_prim = norm(ws.sm.Einv*(ws.p.A*ws.x-ws.s),Inf)
           # ∇f0 + ∑ νi ∇hi(x*) == 0 condition
-          r_dual = norm(ws.sm.cinv*ws.sm.Dinv*(ws.p.P*ws.x + ws.p.q -ws.p.A'*ws.μ),Inf)
+          r_dual = norm(ws.sm.cinv*ws.sm.Dinv*(ws.p.P*ws.x + ws.p.q +ws.p.A'*ws.μ),Inf)
         end
         if (settings.scaling == 0 || IGNORESCALING_FLAG )
-          r_prim = norm(ws.p.A*ws.x+ws.s-ws.p.b,Inf)
-          r_dual = norm(ws.p.P*ws.x + ws.p.q -ws.p.A'*ws.μ,Inf)
+          r_prim = norm(ws.p.A*ws.x-ws.s,Inf)
+          r_dual = norm(ws.p.P*ws.x + ws.p.q +ws.p.A'*ws.μ,Inf)
         end
         # FIXME: Why is it -A'μ ?
     return r_prim,r_dual
@@ -22,7 +22,7 @@ module Residuals
       maxNormDual = max.(norm(ws.sm.cinv*ws.sm.Dinv*ws.p.P*ws.x,Inf), norm(ws.sm.cinv*ws.sm.Dinv*ws.p.q,Inf), norm(ws.sm.cinv*ws.sm.Dinv*ws.p.A'*ws.μ,Inf) )
     end
     if (settings.scaling == 0 || IGNORESCALING_FLAG)
-      maxNormPrim = max.(norm(ws.p.A*ws.x,Inf),norm(ws.s,Inf), norm(ws.p.b,Inf))
+      maxNormPrim = max.(norm(ws.p.A*ws.x,Inf),norm(ws.s,Inf))
       maxNormDual = max.(norm(ws.p.P*ws.x,Inf), norm(ws.p.q,Inf),norm(ws.p.A'*ws.μ,Inf) )
     end
     return maxNormPrim, maxNormDual

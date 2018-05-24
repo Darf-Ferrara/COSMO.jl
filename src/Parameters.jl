@@ -5,10 +5,11 @@ export setRhoVec!, adaptRhoVec!, updateRhoVec!
 
 # set initial values of rhoVec
   function setRhoVec!(p::OSSDPTypes.Problem,settings::OSSDPTypes.OSSDPSettings)
-    nEQ = p.K.f
-    nINEQ = p.m - p.K.f
+    nEQ = find(p.K.b_u .== p.K.b_l)
 
-    p.ρVec = [1e3*settings.rho*ones(nEQ);settings.rho*ones(nINEQ)]
+    p.ρVec = settings.rho*ones(size(p.K.b_u,1))
+    p.ρVec[nEQ] .*= 1e3
+
     p.Info.rho_updates[1] = settings.rho
     return nothing
   end
@@ -34,11 +35,11 @@ export setRhoVec!, adaptRhoVec!, updateRhoVec!
   end
 
   function updateRhoVec!(newRho::Float64,p::OSSDPTypes.Problem,settings::OSSDPTypes.OSSDPSettings)
-    nEQ = p.K.f
-    nINEQ = p.m - p.K.f
+    nEQ = find(p.K.b_u .== p.K.b_l)
 
     settings.rho = newRho
-    p.ρVec = [1e3*newRho*ones(nEQ);newRho*ones(nINEQ)]
+    p.ρVec = newRho*ones(size(p.K.b_u,1))
+    p.ρVec[nEQ] .*= 1e3
     # log rho updates to info variable
     push!(p.Info.rho_updates,newRho)
     factorKKT!(p,settings)

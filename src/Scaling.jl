@@ -145,7 +145,8 @@ export scaleRuiz!, scaleRuizGeometric!,reverseScaling!, scaleSCS!, scaleSymmetri
     ws.p.P = c*D*(ws.p.P*D)
     ws.p.A = E*ws.p.A*D
     ws.p.q = c*D*ws.p.q
-    ws.p.b = E*ws.p.b
+    K.b_u = E*K.b_u
+    K.b_l = E*K.b_l
 
 
     ws.sm.D = D

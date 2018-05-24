@@ -11,8 +11,8 @@ function convertProblem(data)
   P = data["P"]
   A = data["A"]
   q = data["q"]
-  u = data["u"]
-  l = data["l"]
+  u = data["u"][:]
+  l = data["l"][:]
   r = data["r"]
 
   # The matrix A for some reason segfaults in the QAFIRO problem.
@@ -20,6 +20,7 @@ function convertProblem(data)
   I, J, V = findnz(A)
   A = sparse(I, J, V)
 
+  #=
   # Rewrite problem to OSSDP compatible format:
   # determine the indizes and sizes of box constraints with Inf or -Inf values
   neq = find(u .!== l)
@@ -40,11 +41,16 @@ function convertProblem(data)
   if typeof(Aa) == Array{Float64,2}
     Aa = sparse(Aa)
   end
+  =#
+  if typeof(A) == Array{Float64,2}
+    A = sparse(A)
+  end
   if typeof(P) == Array{Float64,2}
     P = sparse(P)
   end
 
-  return P,q,r,Aa,ba,K
+  # return P,q,r,Aa,ba,K
+  return P,q,r,A,OSSDPTypes.Cone(l,u)
   end
 
 

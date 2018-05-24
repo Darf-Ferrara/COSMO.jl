@@ -7,6 +7,13 @@ export nonNegativeOrthant, zeroCone,  freeCone, box, secondOrderCone, sdcone, pr
 # -------------------------------------
 
     function projectCompositeCone!(x,K::OSSDPTypes.Cone)
+      if size(K.b_l, 1) > 0
+        for i=1:size(x, 1)
+          x[i] = min.(max.(x[i],K.b_l[i]),K.b_u[i])
+        end
+        return
+      end
+
       b = 1
 
       if K.f  > 0
@@ -37,7 +44,7 @@ export nonNegativeOrthant, zeroCone,  freeCone, box, secondOrderCone, sdcone, pr
           b = e + 1
         end
       end
-      return x
+      nothing
     end
 
 
