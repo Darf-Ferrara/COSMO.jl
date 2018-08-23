@@ -75,15 +75,28 @@
     rho_updates::Array{Float64,1}
   end
 
-  mutable struct ScaleMatrices
-    D::SparseMatrixCSC{Float64,Int64}
-    Dinv::SparseMatrixCSC{Float64,Int64}
-    E::SparseMatrixCSC{Float64,Int64}
-    Einv::SparseMatrixCSC{Float64,Int64}
-    c::Float64
-    cinv::Float64
-    ScaleMatrices() = new(spzeros(1,1),spzeros(1,1),spzeros(1,1),spzeros(1,1),1.,1.)
+mutable struct ScaleMatrices
+  D::SparseMatrixCSC{Float64,Int64}
+  Dinv::SparseMatrixCSC{Float64,Int64}
+  E::SparseMatrixCSC{Float64,Int64}
+  Einv::SparseMatrixCSC{Float64,Int64}
+  c::Float64
+  cinv::Float64
+  ScaleMatrices() = new(spzeros(1,1),spzeros(1,1),spzeros(1,1),spzeros(1,1),1.,1.)
+end
+
+mutable struct ChordalInfo
+  originalM::Int64
+  originalN::Int64
+  originalPSDs::Array{AbstractConvexSet}
+  H::SparseMatrixCSC{Float64,Int64}
+  function ChordalInfo(model)
+    originalM = model.m
+    originalN = model.n
+    originalPSDs = model.convexSets
+    return new(originalM,originalN,originalPSDs,spzeros(1,1))
   end
+end
 
 mutable struct Flags
   FACTOR_LHS::Bool
@@ -115,6 +128,8 @@ end
   mutable struct Workspace
       p::QOCS.Model
       sm::ScaleMatrices
+      ci::QOCS.ChordalInfo
+
       x::Vector{Float64}
       s::Vector{Float64}
       ν::Vector{Float64}
@@ -123,7 +138,8 @@ end
       ρVec::Array{Float64,1}
       Info::Info
       #constructor
-    function Workspace(p::QOCS.Model,sm::ScaleMatrices)
+
+    function Workspace(p::QOCS.Model,sm::ScaleMatrices,ci::QOCS.ChordalInfo)
       m = p.m
       n = p.n
       ws = new(p,sm,zeros(n),zeros(m),zeros(m),zeros(m),0.,Float64[],Info([0.]))
@@ -156,6 +172,8 @@ end
     RHO_MIN::Float64
     RHO_MAX::Float64
     RHO_TOL::Float64
+    decompose::Bool
+    completeDual::Bool
     time_limit::Int64
     obj_true::Float64
     obj_true_tol::Float64
@@ -182,13 +200,15 @@ end
       RHO_MIN = 1e-6,
       RHO_MAX = 1e6,
       RHO_TOL = 1e-4,
+      decompose = false,
+      completeDual = false,
       time_limit = 0,
       obj_true = NaN,
       obj_true_tol = 1e-3
       )
         new(rho,sigma,alpha,eps_abs,eps_rel,eps_prim_inf,eps_dual_inf,max_iter,verbose,
           check_termination,check_infeasibility,scaling,MIN_SCALING,MAX_SCALING,adaptive_rho,
-          adaptive_rho_interval,adaptive_rho_tolerance,verboseTiming,RHO_MIN,RHO_MAX,RHO_TOL,time_limit,obj_true,obj_true_tol)
+          adaptive_rho_interval,adaptive_rho_tolerance,verboseTiming,RHO_MIN,RHO_MAX,RHO_TOL,decompose,completeDual,time_limit,obj_true,obj_true_tol)
     end
   end
 

@@ -16,6 +16,10 @@ mutable struct Zeros <:AbstractConvexSet
     return new(0,0:0,QOCS.Projections.zeroCone!,QOCS.scale!,QOCS.inFreeCone,QOCS.inPolRecConeZeros)
   end
 
+  function Zeros(dim::Int64,indices::UnitRange{Int64})
+    return new(dim,indices,QOCS.Projections.zeroCone!,QOCS.scale!,QOCS.inFreeCone,QOCS.inPolRecConeZeros)
+  end
+
 end
 
 mutable struct Nonnegatives <:AbstractConvexSet
@@ -73,6 +77,10 @@ mutable struct PositiveSemidefiniteCone <:AbstractConvexSet
 
    function PositiveSemidefiniteCone()
     return new(0,0:0,QOCS.Projections.sdcone!,QOCS.scale!,QOCS.inPSD,QOCS.inPolRecPSD)
+  end
+
+     function PositiveSemidefiniteCone(dim::Int64,indices::UnitRange{Int64})
+    return new(dim,indices,QOCS.Projections.sdcone!,QOCS.scale!,QOCS.inPSD,QOCS.inPolRecPSD)
   end
 end
 

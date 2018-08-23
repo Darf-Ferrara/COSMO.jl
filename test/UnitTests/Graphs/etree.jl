@@ -1,10 +1,9 @@
 # script to test new elimination tree from graph algorithm
 
-workspace()
 include("../../../src/Graph.jl")
 include("../../../src/Tree.jl")
 
-using GraphModule, TreeModule, Base.Test
+using GraphModule, TreeModule, Test, LinearAlgebra
 
 A = [1 1 0 0 0; 1 1 1 0 0; 0 1 1 1 1; 0 0 1 1 1; 0 0 1 1 1]
 

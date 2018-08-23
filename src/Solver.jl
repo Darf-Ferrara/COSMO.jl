@@ -1,7 +1,7 @@
 
 
 
-function admmStep!(x, s, μ, ν, x_tl, s_tl, ls, sol, F, q, b, K, ρ, α, σ, m, n,convexSets)
+function admmStep!(x, s, μ, ν, x_tl, s_tl, ls, sol, F, q, b, K, ρ, α, σ, m, n,convexSets,projTime)
   # Create right hand side for linear system
   for i=1:n
     ls[i] = σ*x[i]-q[i]
@@ -19,10 +19,12 @@ function admmStep!(x, s, μ, ν, x_tl, s_tl, ls, sol, F, q, b, K, ρ, α, σ, m,
   @. s_tl = α*s_tl + (1.0-α)*s
   @. s = s_tl + μ./ρ
   # Project onto cone K
+  projStartTime = time()
   Projections.projectCompositeCone!(s, convexSets)
+  projTime += time() - projStartTime
   # update dual variable μ
   @. μ = μ + ρ.*(s_tl - s)
-  nothing
+  return projTime
 end
 
 
@@ -31,7 +33,16 @@ end
 # -------------------------------------
   function optimize!(model::QOCS.Model,settings::QOCS.Settings)
     solverTime_start = time()
+    projTime = 0.
 
+    # check if chordal decomposition wanted and possible, if so augment system
+    settings.verboseTiming && (graphTime_start = time())
+
+    chordalInfo = QOCS.ChordalInfo(model)
+    if settings.decompose
+      chordalDecomposition!(model,settings,chordalInfo)
+    end
+    settings.verboseTiming && (graphTime = time() - graphTime_start)
     # create workspace variables
     ws = Workspace(model,ScaleMatrices())
 
@@ -75,7 +86,7 @@ end
         x_tl, s_tl, ls,sol,
         ws.p.F, ws.p.q, ws.p.b, ws.p.K, ws.ρVec,
         settings.alpha, settings.sigma,
-        m, n, ws.p.convexSets
+        m, n, ws.p.convexSets,projTime
       )
 
       # compute deltas for infeasibility detection
@@ -158,6 +169,9 @@ end
 
     solverTime = time() - solverTime_start
 
+    if settings.decompose
+      δs,maxRowH = reverseDecomposition!(ws,settings)
+    end
     # print solution to screen
     settings.verbose && printResult(status,numIter,cost,solverTime)
 

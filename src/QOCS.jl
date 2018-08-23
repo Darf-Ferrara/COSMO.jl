@@ -16,8 +16,11 @@ include("./Parameters.jl")
 include("./Infeasibility.jl")
 include("./Printing.jl")
 include("./Setup.jl")
+include("./Graphs.jl")
+include("./Trees.jl")
+include("./ChordalSparsity.jl")
 
-using .Projections, .Scaling, .Parameters, .Infeasibility, .Residuals, .Printing, .Setup
+using .Projections, .Scaling, .Parameters, .Infeasibility, .Residuals, .Printing, .Setup, .Graphs, .Trees, .ChordalSparsity
 include("./Solver.jl")
 include("./Interface.jl")
 

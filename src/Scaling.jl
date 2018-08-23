@@ -1,8 +1,7 @@
 module Scaling
 
 using ..QOCS, SparseArrays, LinearAlgebra, Statistics
-export scaleRuiz!, scaleRuizGeometric!,reverseScaling!, scaleSCS!, scaleSymmetric!, findCloseSymmetricScaling
-
+export scaleRuiz!,reverseScaling!
 
   function normKKTCols(P::SparseMatrixCSC{Float64,Int64},A::SparseMatrixCSC{Float64,Int64})
       normPCols = [norm(P[:,i],Inf) for i in 1:size(P,2)]
