@@ -156,6 +156,7 @@ module Trees
     end
 
     function childFromPar(par::Array{Int64,1})
+
         child = [Array{Int64}(undef,0) for i=1:length(par)]
         for i=1:length(par)
             par_ = par[i]
@@ -305,7 +306,7 @@ module Trees
 
     end
 
-    function findallCliques(g::Graphs.Graph,snodes::Array{Int64,1},snptr::Array{Int64,1},supernode_par::Array{Int64,1},post::Array{Int64,1})
+    function findCliques(g::Graphs.Graph,snodes::Array{Int64,1},snptr::Array{Int64,1},supernode_par::Array{Int64,1},post::Array{Int64,1})
             postInv = invertOrder(post)
 
             Nc = length(supernode_par)
