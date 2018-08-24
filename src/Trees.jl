@@ -253,23 +253,20 @@ module Trees
 
         # representative vertices
         repr = findall(x-> x < 0, snInd)
-
-        # remove all non-representative vertices from supernode parent structure
+        # vertices that are the parent of representative vertices
+        reprPar = supernode_par[repr]
+        # take into account that all non-representative arrays are removed from the parent structure
         snpar = zeros(Int64,length(repr))
 
-        for (i,vr) in enumerate(repr)
-            snpar[i] = supernode_par[vr]
+        for (iii,rp) in enumerate(reprPar)
+            ind = findfirst(x->x == rp, repr)
+            ind == nothing && (ind=0)
+            snpar[iii] = ind
         end
-        setRoot!(snpar)
 
         return snpar,snInd
     end
 
-    function setRoot!(snpar::Array{Int64,1})
-        ind = findall(x->x == -1,snpar)
-        snpar[ind] .= 0
-        nothing
-    end
     function findSuperNodes(par::Array{Int64,1},child::Array{Array{Int64,1}},post::Array{Int64,1},degrees::Array{Int64,1})
         supernode_par,snInd = Trees.pothenSun(par,child,post,degrees)
         # number of vertices
