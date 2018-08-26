@@ -113,7 +113,7 @@ function chordalDecomposition!(model::QOCS.Model,settings::QOCS.Settings,chordal
   # augment the system
   m,n = size(A)
   mH,nH = size(H)
-  model.P = blkdiag(model.P,spzeros(nH,nH))
+  model.P = blockdiag(model.P,spzeros(nH,nH))
   model.q = vec([model.q;zeros(nH)])
   model.A = [model.A H; spzeros(nH,n) -sparse(1.0I,nH,nH)]
   model.b = vec([model.b;zeros(nH)])
