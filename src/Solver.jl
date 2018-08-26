@@ -44,7 +44,7 @@ end
     end
     settings.verboseTiming && (graphTime = time() - graphTime_start)
     # create workspace variables
-    ws = Workspace(model,ScaleMatrices())
+    ws = Workspace(model,ScaleMatrices(),chordalInfo)
 
     # perform preprocessing steps (scaling, initial KKT factorization)
     setupTime = time()

@@ -129,7 +129,6 @@ end
       p::QOCS.Model
       sm::ScaleMatrices
       ci::QOCS.ChordalInfo
-
       x::Vector{Float64}
       s::Vector{Float64}
       ν::Vector{Float64}
@@ -142,7 +141,7 @@ end
     function Workspace(p::QOCS.Model,sm::ScaleMatrices,ci::QOCS.ChordalInfo)
       m = p.m
       n = p.n
-      ws = new(p,sm,zeros(n),zeros(m),zeros(m),zeros(m),0.,Float64[],Info([0.]))
+      ws = new(p,sm,ci,zeros(n),zeros(m),zeros(m),zeros(m),0.,Float64[],Info([0.]))
       # hand over warm starting variables
       length(p.x0) == n && (ws.x = p.x0)
       length(p.y0) == m && (ws.μ = -p.y0)
