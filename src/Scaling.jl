@@ -110,14 +110,13 @@ export scaleRuiz!,reverseScaling!
 
     # make sure cone membership is preserved
     sTemp = [diag(D);diag(E)]
-    ix = n
-    K.f > 0 && (ix += K.f)
-    K.l > 0 && (ix += K.l)
+
 
     for set in convexSets
       isScaleScalar, = set.scale!(set)
       if isScaleScalar
-        sTemp[set.indices] .= mean(sTemp[set.indices])
+        ind = set.indices .+n
+        sTemp[ind] .= mean(sTemp[ind])
       end
     end
 
