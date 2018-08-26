@@ -1,6 +1,20 @@
-# User facing functions / structs:
+"""
+    assemble!(model,P,q,constraints,[x0,y0])
+>>>>>>> devel
 
+Assembles a `QOCS.Model` with a cost function defind by `P` and `q`, and an array of `constraints`.
 
+The positive semidefinite matrix `P` and vector `q` are used to specify the cost function of the optimization problem:
+
+```
+min   1/2 x'Px + q'x
+s.t.  Ax + b ∈ C
+```
+`constraints` is an array of `QOCS.Constraint` objects that are used to describe the constraints on `x`.
+
+---
+The optinal arguments `x0` and `y0` can be used to provide the solver with warm starting values for the primal variable `x` and the dual variable `y`.
+"""
 function assemble!(model::QOCS.Model,P::AbstractMatrix{<:Real},q::AbstractVector{<:Real},constraints::Array{QOCS.Constraint},x0::Union{Vector{Float64}, Nothing} = nothing, y0::Union{Vector{Float64}, Nothing} = nothing)
   # convert inputs
   P[:,:] = convert(SparseMatrixCSC{Float64,Int64},P)
@@ -39,11 +53,6 @@ function assemble!(model::QOCS.Model,P::AbstractMatrix{<:Real},q::AbstractVector
   nothing
 end
 
-function warmStart!(model::QOCS.Model; x0::Union{Vector{Float64}, Nothing} = nothing, y0::Union{Vector{Float64}, Nothing} = nothing)
-    x0 isa Vector{Float64} && (model.x0 = x0)
-    y0 isa Vector{Float64} && (model.y0 = y0)
-end
-
 function assemble!(model::QOCS.Model,P::Real,q::Real,constraints::Array{QOCS.Constraint})
   Pm = spzeros(1,1)
   qm = zeros(1)
@@ -55,6 +64,27 @@ end
 assemble!(model::QOCS.Model,P::AbstractMatrix{<:Real},q::AbstractMatrix{<:Real},constraints::Array{QOCS.Constraint}) = assemble!(model,P,vec(q),constraints)
 assemble!(model::QOCS.Model,P::AbstractMatrix{<:Real},q::Real,constraints::Array{QOCS.Constraint}) = assemble!(model,P,[q],constraints)
 
+"""
+    warmStart!(model,[x0,y0])
+
+Provides the `QOCS.Model` with warm starting values for the primal variable `x` and/or the dual variable `y`.
+"""
+function warmStart!(model::QOCS.Model; x0::Union{Vector{Float64}, Nothing} = nothing, y0::Union{Vector{Float64}, Nothing} = nothing)
+    if x0 isa Vector{Float64}
+      if size(model.A,2) == length(x0)
+        model.x0 = x0
+      else
+        error("Dimension of x0 doesn't match the dimension of A.")
+      end
+    end
+    if y0 isa Vector{Float64}
+      if length(model.b) == length(y0)
+        model.y0 = y0
+      else
+        error("Dimension of y0 doesn't match the dimensions of the constraint variables A,b.")
+      end
+    end
+end
 
 # merge zeros sets and nonnegative sets
 function mergeConstraints!(constraints::Array{QOCS.Constraint})
