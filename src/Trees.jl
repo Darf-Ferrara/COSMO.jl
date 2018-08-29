@@ -1,6 +1,6 @@
 module Trees
     using ..Graphs, LinearAlgebra
-    export Tree, Node, createTreeFromGraph, createSupernodeEliminationTree, createCliqueTree, numberOfCliques,printCliques, printSupernodes
+    export Tree, Node, createTreeFromGraph, createSupernodeEliminationTree, createCliqueTree, numberOfCliques,printCliques, printSupernodes, getNumCliques
     export SuperNodeTree, childFromPar, postOrder,etree, higherDegrees, invertOrder, checkDegreeCondition, pothenSunGarstka, getSnd, getClique
 
     # -------------------------------------
@@ -54,7 +54,7 @@ module Trees
     par::Array{Int64}
     cliques::Array{Int64,1} #vertices of cliques stored in one array
     chptr::Array{Int64,1} #points to the indizes where new clique starts in cliques array
-
+    nBlk::Array{Int64,1} #sizes of submatrizes defined by each clique
     function SuperNodeTree(g::Graphs.Graph)
         par = etree(g)
         child = childFromPar(par)
@@ -68,9 +68,10 @@ module Trees
         snd_child = childFromPar(snd_par)
         snd_post = postOrder(snd_par,snd_child)
 
-        cliques,chptr = findCliques(g,snd,snptr,snd_par,post)
+        cliques,chptr,nBlk = findCliques(g,snd,snptr,snd_par,post)
 
-        new(snd,snptr,snd_par,snd_post,post,par,cliques,chptr)
+
+        new(snd,snptr,snd_par,snd_post,post,par,cliques,chptr,nBlk)
     end
 
   end
@@ -88,8 +89,8 @@ module Trees
         return sigmaInv
     end
 
-     function numberOfCliques(ct::Tree)
-        return size(ct.nodes,1)
+     function getNumCliques(sntree::SuperNodeTree)
+        return length(sntree.chptr)
     end
 
     # elimination tree algorithm from H.Liu - A Compact Row Storage Scheme for Cholesky Factors Using Elimination Trees
@@ -308,6 +309,7 @@ module Trees
 
             Nc = length(supernode_par)
             cliques = Array{Int64}(undef,0)
+            nBlk = zeros(Int64,Nc)
             chptr = zeros(Int64,Nc)
             jjj = 1
 
@@ -321,10 +323,11 @@ module Trees
                 deg = length(adjPlus) + 1
                 cliques = [cliques;vRep;adjPlus]
                 chptr[iii] = jjj
+                nBlk[iii] = Base.power_by_squaring(length(adjPlus)+1, 2)
                 jjj +=deg
             end
 
-        return cliques,chptr
+        return cliques,chptr,nBlk
 
     end
 

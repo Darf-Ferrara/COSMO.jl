@@ -3,13 +3,15 @@
 
 function admmStep!(x, s, μ, ν, x_tl, s_tl, ls, sol, F, q, b, K, ρ, α, σ, m, n,convexSets,projTime)
   # Create right hand side for linear system
+  ls = zeros(n+m)
   for i=1:n
     ls[i] = σ*x[i]-q[i]
   end
   for i=1:m
     ls[n+i] = b[i]-s[i]+μ[i]/ρ[i]
   end
-    sol = F \ ls
+
+  sol = F \ ls
   # deconstruct solution vector ls = [x_tl(n+1);ν(n+1)]
   @. x_tl = sol[1:n]
   @. ν = sol[n+1:end]
@@ -88,7 +90,7 @@ end
       numIter+= 1
       @. δx = ws.x
       @. δy = ws.μ
-      admmStep!(
+      projTime = admmStep!(
         ws.x, ws.s, ws.μ, ws.ν,
         x_tl, s_tl, ls,sol,
         ws.p.F, ws.p.q, ws.p.b, ws.p.K, ws.ρVec,
@@ -186,7 +188,7 @@ end
     # create result object
     resinfo = QOCS.ResultInfo(r_prim,r_dual)
     if settings.verboseTiming
-      times = QOCS.ResultTimes(solverTime,setupTime,0.,0.,iterTime,0.,0.)
+      times = QOCS.ResultTimes(solverTime,setupTime,graphTime,0.,iterTime,projTime,0.)
     else
       times = QOCS.ResultTimes(solverTime,NaN,NaN,NaN,NaN,NaN,NaN)
     end

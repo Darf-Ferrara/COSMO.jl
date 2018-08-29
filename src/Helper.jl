@@ -1,6 +1,6 @@
 module Helper
 using LinearAlgebra, Random
-export generatePosDefMatrix, isNumericallyPosSemDef, isNumericallySymmetric, findNonSymmetricComponent, findDifferentElements, reCreateSparseMatrix,duplicateSparsityPattern, gmean
+export printArray,generatePosDefMatrix, isNumericallyPosSemDef, isNumericallySymmetric, findNonSymmetricComponent, findDifferentElements, reCreateSparseMatrix,duplicateSparsityPattern, gmean
 
   # generate a random pos def matrix with eigenvalues between 0.1 and 2
   function generatePosDefMatrix(n::Int64,rng)
@@ -108,4 +108,26 @@ function gmean(a::AbstractArray{T}) where T<:Real
     end
     return exp(s / n)
 end
+
+function printArray(A)
+  s = size(A)
+  if length(s) == 1
+    m = s[1]
+    n = 1
+  else
+    m,n = size(A)
+  end
+  print("\n=[")
+  for i=1:m
+    for j=1:n
+      if j < n
+        print("$(A[i,j]) ")
+      else
+        print("$(A[i,j]);\n")
+      end
+    end
+  end
+  print("]\n\n")
+end
+
 end #MODULE

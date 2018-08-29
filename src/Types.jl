@@ -103,13 +103,13 @@ end
 mutable struct ChordalInfo
   originalM::Int64
   originalN::Int64
-  originalPSDs::Array{AbstractConvexSet}
+  originalConvexSets::Array{AbstractConvexSet}
   H::SparseMatrixCSC{Float64,Int64}
   function ChordalInfo(model)
     originalM = model.m
     originalN = model.n
-    originalPSDs = model.convexSets
-    return new(originalM,originalN,originalPSDs,spzeros(1,1))
+    originalConvexSets = deepcopy(model.convexSets)
+    return new(originalM,originalN,originalConvexSets,spzeros(1,1))
   end
 end
 

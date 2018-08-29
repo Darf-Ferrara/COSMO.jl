@@ -6,10 +6,16 @@ export setRhoVec!, adaptRhoVec!, updateRhoVec!
 # set initial values of rhoVec
   function setRhoVec!(ws::QOCS.Workspace,settings::QOCS.Settings)
     p = ws.p
-    # nEQ = p.K.f
-    # nINEQ = p.m - p.K.f
+    #nEQ = sum(map(x->x.dim,filter(x->typeof(x) == QOCS.Zeros(), ws.p.convexSets))) #p.K.f
+    #nINEQ = p.m - nEQ
     ws.ρ = settings.rho
-    ws.ρVec = ws.ρ*ones(p.m) #[1e3*ws.ρ*ones(nEQ);ws.ρ*ones(nINEQ)]
+    ws.ρVec = ws.ρ*ones(p.m)
+    for set in ws.p.convexSets
+      if typeof(set) == QOCS.Zeros
+        ws.ρVec[set.indices] *= 1000
+      end
+    end
+    #ws.ρVec = [1e3*ws.ρ*ones(nEQ);ws.ρ*ones(nINEQ)] #ws.ρ*ones(p.m)
     push!(ws.Info.rho_updates,ws.ρ)
     return nothing
   end
@@ -36,12 +42,16 @@ export setRhoVec!, adaptRhoVec!, updateRhoVec!
 
   function updateRhoVec!(newRho::Float64,ws::QOCS.Workspace,settings::QOCS.Settings)
     p = ws.p
-    nEQ = p.K.f
-    nINEQ = p.m - p.K.f
+    #nEQ = sum(map(x->x.dim,filter(x->typeof(x) == QOCS.Zeros(), ws.p.convexSets))) #p.K.f
+    #nINEQ = p.m - nEQ
 
     ws.ρ = newRho
-    ws.ρVec = newRho*ones(p.m)#[1e3*newRho*ones(nEQ);newRho*ones(nINEQ)]
-    # log rho updates to info variable
+    ws.ρVec = ws.ρ*ones(p.m)
+        for set in ws.p.convexSets
+          if typeof(set) == QOCS.Zeros()
+            ws.ρVec[set.indices] *= 1000
+          end
+        end    # log rho updates to info variable
     push!(ws.Info.rho_updates,newRho)
     factorKKT!(ws,settings)
     return nothing

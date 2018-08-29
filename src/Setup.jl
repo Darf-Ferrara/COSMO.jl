@@ -9,7 +9,6 @@ module Setup
     end
 
     setRhoVec!(ws,settings)
-
     # factor the KKT condition matrix
     ws.p.flags.FACTOR_LHS && factorKKT!(ws,settings)
   end

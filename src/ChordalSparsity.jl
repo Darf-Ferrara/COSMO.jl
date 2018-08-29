@@ -15,8 +15,8 @@ mutable struct SparsityPattern
 
 
   # constructor for sparsity pattern
-  function SparsityPattern(A::Array{Int64,1},N::Int64,NONZERO_FLAG::Bool)
-    g = Graph(A,N,NONZERO_FLAG)
+  function SparsityPattern(rows::Array{Int64,1},N::Int64,NONZERO_FLAG::Bool)
+    g = Graph(rows,N,NONZERO_FLAG)
     sntree = SuperNodeTree(g)
 
     return new(g,sntree)
@@ -26,32 +26,32 @@ end
 
 
 
-mutable struct CliqueSet
-  cliqueInd::Vector{Int64} # an index set pointing to first element of each clique
-  cliques::Vector{Int64} # just a vector with all cliques stacked
-  vlen::Int64
-  nBlk::Vector{Int64} # sizes of blocks
-  N::Int64 # number of cliques in the set
+# mutable struct CliqueSet
+#   cliqueInd::Vector{Int64} # an index set pointing to first element of each clique
+#   cliques::Vector{Int64} # just a vector with all cliques stacked
+#   vlen::Int64
+#   nBlk::Vector{Int64} # sizes of blocks
+#   N::Int64 # number of cliques in the set
 
-  function CliqueSet(cliqueArr::Array{Array{Int64,1}})
-    p = length(cliqueArr)
-    # initialize fields
-    cliqueInd = zeros(p)
-    cliques = zeros(Int64,sum(map(x->length(x),cliqueArr)))
-    nBlk = zeros(p)
-    b = 1
-    iii = 1
-    for c in cliqueArr
-      cliqueInd[iii] = b
-      cliques[b:b+length(c)-1] = c
-      nBlk[iii] = length(c)^2
-      b +=length(c)
-      iii +=1
-    end
+#   function CliqueSet(cliqueArr::Array{Array{Int64,1}})
+#     p = length(cliqueArr)
+#     # initialize fields
+#     cliqueInd = zeros(p)
+#     cliques = zeros(Int64,sum(map(x->length(x),cliqueArr)))
+#     nBlk = zeros(p)
+#     b = 1
+#     iii = 1
+#     for c in cliqueArr
+#       cliqueInd[iii] = b
+#       cliques[b:b+length(c)-1] = c
+#       nBlk[iii] = length(c)^2
+#       b +=length(c)
+#       iii +=1
+#     end
 
-    return new(cliqueInd,cliques,length(cliques),nBlk,p)
-  end
-end
+#     return new(cliqueInd,cliques,length(cliques),nBlk,p)
+#   end
+# end
 
 
 
@@ -77,41 +77,40 @@ end
 
 function shiftIndices!(convexSets::Array{AbstractConvexSet},shift::Int64)
   for set in convexSets
-      set.indices.start += shift
-      set.indices.stop += shift
+      set.indices = (set.indices.start + shift):(set.indices.stop+shift)
   end
 end
 
 function chordalDecomposition!(model::QOCS.Model,settings::QOCS.Settings,chordalInfo::QOCS.ChordalInfo)
 
   # do nothing if no psd cones present in the problem
-  if _contains(model.convexSets,QOCS.PositiveSemidefiniteCone)
+  if !_contains(model.convexSets,QOCS.PositiveSemidefiniteCone)
     settings.decompose = false
     return nothing
   end
-  psdCones = filter(x->typeof(x) == QOCS.PositiveSemidefiniteCone,model.convexSets)
+  psdCones = filter(x->typeof(x) == QOCS.PositiveSemidefiniteCone,model.convexSets)[:]
 
   # find sparsity pattern for each cone
   numCones = length(psdCones)
-  spArr = Array{ChordalSparsity.SparsityPattern,1}(numCones)
-  cliqueSets = Array{ChordalSparsity.CliqueSet,1}(numCones)
+  spArr = Array{ChordalSparsity.SparsityPattern}(undef,numCones)
+  #cliqueSets = Array{ChordalSparsity.CliqueSet}(undef,numCones)
 
   # find sparsity pattern graphs and clique sets for each cone
   for (iii,cone) in enumerate(psdCones)
     ind = cone.indices
-    csp = findCommonSparsity(A[ind,:],b[ind])
+    csp = findCommonSparsity(model.A,model.b,ind)
     cDim = Int(sqrt(cone.dim))
     sp = SparsityPattern(csp,cDim,true)
     spArr[iii] = sp
-    cliqueSets[iii] = CliqueSet(sp.cliques)
+    #cliqueSets[iii] = CliqueSet(sp.cliques)
   end
 
   # find transformation matrix H and store it
-  H, decomposedPSDCones = findStackingMatrix(K,cliqueSets,model.m)
+  H, decomposedPSDCones = findStackingMatrix(psdCones,spArr,model.m)
   chordalInfo.H = H
 
   # augment the system
-  m,n = size(A)
+  m,n = size(model.A)
   mH,nH = size(H)
   model.P = blockdiag(model.P,spzeros(nH,nH))
   model.q = vec([model.q;zeros(nH)])
@@ -120,8 +119,8 @@ function chordalDecomposition!(model::QOCS.Model,settings::QOCS.Settings,chordal
   model.m = size(model.A,1)
   model.n = size(model.A,2)
 
-  filter!(x->typeof(x) != QOCS.PositiveSemidefiniteCone,model.convexSets)
-  model.convexSets = [model.convexSets;decomposedPSDCones]
+  filteredCones = filter(x->typeof(x) != QOCS.PositiveSemidefiniteCone,model.convexSets)
+  model.convexSets = [filteredCones;decomposedPSDCones]
   shiftIndices!(model.convexSets,mH)
   model.convexSets = [QOCS.Zeros(mH,1:mH);model.convexSets]
   nothing
@@ -137,11 +136,13 @@ function zeroRows(a::SparseMatrixCSC,DROPZEROS_FLAG::Bool)
     return findall(passive)
 end
 
-function nzrows(a::SparseMatrixCSC,DROPZEROS_FLAG::Bool)
+function nzrows(a::SparseMatrixCSC,ind::UnitRange{Int64},DROPZEROS_FLAG::Bool)
     DROPZEROS_FLAG && dropzeros!(a)
-    active = falses(a.m)
+    active = falses(length(ind))
     for r in a.rowval
+      if in(r,ind)
         active[r] = true
+      end
     end
     return findall(active)
 end
@@ -153,10 +154,10 @@ function numberOfOverlapsInRows(A::SparseMatrixCSC)
   return ri, numOverlaps[ri]
 end
 
-function findCommonSparsity(A,b)
-  AInd = ChordalSparsity.nzrows(A,false)
+function findCommonSparsity(A,b,ind)
+  AInd = ChordalSparsity.nzrows(A,ind,false)
   # commonZeros = AInd[find(x->x==0,b[AInd])]
-  bInd = findall(x->x!=0,b)
+  bInd = findall(x->x!=0,view(b,ind))
   commonNZeros = union(AInd,bInd)
 
   return commonNZeros
@@ -194,22 +195,22 @@ function vecToMatInd(ind::Int64,n::Int64)
 end
 
 
-function getClique(cs::ChordalSparsity.CliqueSet,ind::Int64)
-  len = length(cs.cliqueInd)
-  ind > len && error("Clique index ind=$(ind) is higher than number of cliques in the provided set:$(len).")
-  ind < len ? (c = cs.cliques[cs.cliqueInd[ind]:cs.cliqueInd[ind+1]-1]) : (c = cs.cliques[cs.cliqueInd[ind]:end])
-  return c
-end
+# function getClique(cs::ChordalSparsity.CliqueSet,ind::Int64)
+#   len = length(cs.cliqueInd)
+#   ind > len && error("Clique index ind=$(ind) is higher than number of cliques in the provided set:$(len).")
+#   ind < len ? (c = cs.cliques[cs.cliqueInd[ind]:cs.cliqueInd[ind+1]-1]) : (c = cs.cliques[cs.cliqueInd[ind]:end])
+#   return c
+# end
 
 # function finds the transformation matrix H to decompose the vector s into its parts and stacks them into sbar, also returns  Ks
-function findStackingMatrix(psdCones::Array{QOCS.PositiveSemidefiniteCone},cliqueSets::Array{ChordalSparsity.CliqueSet,1},m::Int64)
+function findStackingMatrix(psdCones::Array{QOCS.AbstractConvexSet,1},spArr::Array{ChordalSparsity.SparsityPattern,1},m::Int64)
 
   numCones = length(psdCones)
-  numCones != length(cliqueSets) && error("Number of psd cones and number of clique sets don't match.")
+  numCones != length(spArr) && error("Number of psd cones and number of clique sets don't match.")
 
   stackedSizes = zeros(Int64,numCones)
   for iii=1:numCones
-    stackedSizes[iii] = sum(cliqueSets[iii].nBlk)
+    stackedSizes[iii] = sum(spArr[iii].sntree.nBlk)
   end
 
   bK = m - sum(map(x->x.dim,psdCones))
@@ -218,18 +219,22 @@ function findStackingMatrix(psdCones::Array{QOCS.PositiveSemidefiniteCone},cliqu
   n = bK + sum(stackedSizes)
 
   H = spzeros(m,n)
-  H[1:bK,1:bK] = speye(bK)
+  H[1:bK,1:bK] = sparse(1.0I,bK,bK)
   bK += 1
   b = bK
   decomposedPSDCones = Array{QOCS.PositiveSemidefiniteCone}(undef,0)
-  for kkk = 1:length(cliqueSets)
-    cliqueSet = cliqueSets[kkk]
+  # loop over all supernode trees that hold the clique information for each decomposed cone
+  for kkk = 1:length(spArr)
+    sntree = spArr[kkk].sntree
     mH = Int64
-    for iii=1:cliqueSet.N
-      mk = Int(sqrt(cliqueSet.nBlk[iii]))
-      nk = Int(sqrt(psdCones[iii].dim))
+    for iii=1:getNumCliques(sntree)
+      # new stacked size
+      mk = Int(sqrt(sntree.nBlk[iii]))
+      # original size
+      nk = Int(sqrt(psdCones[kkk].dim))
       Ek = zeros(mk,nk)
-      c = getClique(cliqueSet,iii)
+      c = getClique(sntree,iii)
+      sort!(c)
       jjj = 1
       for v in c
         Ek[jjj,v] = 1
@@ -251,6 +256,7 @@ end
 function reverseDecomposition!(ws::QOCS.Workspace,settings::QOCS.Settings)
   mO = ws.ci.originalM
   nO = ws.ci.originalN
+
   H = ws.ci.H
 
   sbar = ws.x[nO+1:end]
@@ -263,8 +269,9 @@ function reverseDecomposition!(ws::QOCS.Workspace,settings::QOCS.Settings)
   fillDualVariables!(ws)
   # if user requests, perform positive semidefinite completion on entries of μ that were not in the decomposed blocks
   settings.completeDual && psdCompletion!(ws)
+  ws.p.convexSets = ws.ci.originalConvexSets
   δs = s2 - sbar
-  maxRowH = maximum(sum(H,2))
+  maxRowH = maximum(sum(H,dims=2))
   return δs, maxRowH
 end
 
