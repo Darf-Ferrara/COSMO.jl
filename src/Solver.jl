@@ -21,12 +21,10 @@ function admmStep!(x, s, μ, ν, x_tl, s_tl, ls, sol, F, q, b, K, ρ, α, σ, m,
   @. s_tl = α*s_tl + (1.0-α)*s
   @. s = s_tl + μ./ρ
   # Project onto cone K
-  projStartTime = time()
-  Projections.projectCompositeCone!(s, convexSets)
-  projTime += time() - projStartTime
+  pTime = @elapsed Projections.projectCompositeCone!(s, convexSets)
   # update dual variable μ
   @. μ = μ + ρ.*(s_tl - s)
-  return projTime
+  projTime += pTime
 end
 
 
@@ -42,16 +40,15 @@ end
   """
   function optimize!(model::QOCS.Model,settings::QOCS.Settings)
     solverTime_start = time()
-    projTime = 0.
 
     # check if chordal decomposition wanted and possible, if so augment system
-    settings.verboseTiming && (graphTime_start = time())
+    settings.verbose_timing && (graphTime_start = time())
 
     chordalInfo = QOCS.ChordalInfo(model)
     if settings.decompose
       chordalDecomposition!(model,settings,chordalInfo)
     end
-    settings.verboseTiming && (graphTime = time() - graphTime_start)
+    settings.verbose_timing && (graphTime = time() - graphTime_start)
     # create workspace variables
     ws = Workspace(model,ScaleMatrices(),chordalInfo)
 
@@ -90,12 +87,12 @@ end
       @. δx = ws.x
       @. δy = ws.μ
 
-      projTime += @elapsed admmStep!(
+      admmStep!(
         ws.x, ws.s, ws.μ, ws.ν,
         x_tl, s_tl, ls,sol,
         ws.p.F, ws.p.q, ws.p.b, ws.p.K, ws.ρVec,
         settings.alpha, settings.sigma,
-        m, n, ws.p.convexSets
+        m, n, ws.p.convexSets,ws.times.projTime
       );
 
       # compute deltas for infeasibility detection
