@@ -116,6 +116,7 @@ export scaleRuiz!,reverseScaling!
       isScaleScalar, = set.scale!(set)
       if isScaleScalar
         ind = set.indices .+n
+
         sTemp[ind] .= mean(sTemp[ind])
       end
     end

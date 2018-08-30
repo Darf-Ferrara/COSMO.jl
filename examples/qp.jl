@@ -20,17 +20,17 @@ constraint1 = QOCS.Constraint(Aa,ba,QOCS.Nonnegatives())
 # define example problem
 settings = QOCS.Settings(verbose=true,eps_abs = 1e-4,eps_rel = 1e-4);
 
-
-model = QOCS.Model();
-assemble!(model,P,q,[constraint1]);
+model = QOCS.Model()
+assemble!(model,P,q,constraint1)
 res = QOCS.optimize!(model,settings);
 
 # solve again by defining the constraints with the help of a box (disable infeasibility checks)
 constraint1 = QOCS.Constraint(A,zeros(3),QOCS.Box(l,u))
 settings = QOCS.Settings(check_infeasibility = 2500, verbose=true,eps_abs = 1e-4,eps_rel = 1e-4);
 
-model = QOCS.Model();
-assemble!(model,P,q,[constraint1]);
+
+model = QOCS.Model()
+assemble!(model,P,q,constraint1)
 res_box = QOCS.optimize!(model,settings);
 
 
