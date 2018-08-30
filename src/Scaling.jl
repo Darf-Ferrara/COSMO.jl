@@ -48,7 +48,6 @@ export scaleRuiz!,reverseScaling!
     q = copy(ws.p.q)
     m = ws.p.m
     n = ws.p.n
-    K = ws.p.K
     c = 1.0
     sTemp = ones(n+m)
     convexSets = ws.p.convexSets

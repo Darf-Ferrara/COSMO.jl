@@ -144,7 +144,6 @@ mutable struct Model
     A::SparseMatrixCSC{Float64,Int64}
     b::Vector{Float64}
     convexSets::Array{AbstractConvexSet}
-    K::Cone
     x0::Vector{Float64}
     y0::Vector{Float64}
     m::Int64
@@ -153,7 +152,7 @@ mutable struct Model
     flags::QOCS.Flags
 
     function Model()
-        return new(spzeros(Float64,1,1), Float64[], spzeros(Float64,1,1),Float64[],AbstractConvexSet[],Cone(),Float64[],Float64[],0,0,0,Flags())
+        return new(spzeros(Float64,1,1), Float64[], spzeros(Float64,1,1),Float64[],AbstractConvexSet[],Float64[],Float64[],0,0,0,Flags())
     end
 end
 
