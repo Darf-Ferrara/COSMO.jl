@@ -149,7 +149,7 @@ end
 
 function numberOfOverlapsInRows(A::SparseMatrixCSC)
   # sum the entries row-wise
-  numOverlaps = sum(A,2)
+  numOverlaps = sum(A,dims=2)
   ri = findall(x-> x > 1,numOverlaps)
   return ri, numOverlaps[ri]
 end
