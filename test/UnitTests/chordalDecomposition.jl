@@ -1,4 +1,4 @@
-using QOCS,SparseArrays,LinearAlgebra, FileIO
+using QOCS,SparseArrays,LinearAlgebra, FileIO, Test
 
 data = load("./ProblemFiles/decomp_testProblem.jld2")
 
@@ -11,7 +11,7 @@ objTrue = data["objTrue"]
 cs = QOCS.Constraint(-A,b,QOCS.PositiveSemidefiniteCone())
 model = QOCS.Model()
 assemble!(model,P,q,[cs])
-# # solve problem with sparsity turned off
+# # solve problem with chordal decomposition turned off
 settings = QOCS.Settings(decompose=false,obj_true=objTrue)
 res = QOCS.optimize!(model,settings);
 
@@ -28,3 +28,4 @@ res_decomp = QOCS.optimize!(model,settings_decomp);
   @test abs(res_decomp.objVal-res.objVal) < 1e-3
   @test abs(res_decomp.objVal-objTrue) < 1e-3
 end
+nothing

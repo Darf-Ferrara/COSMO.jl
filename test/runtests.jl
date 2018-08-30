@@ -20,5 +20,6 @@ rng = Random.MersenneTwister(12345)
   include("./UnitTests/closestcorr.jl")
   include("./UnitTests/print.jl")
   include("./UnitTests/InfeasibilityTests/runTests.jl")
+  include("./UnitTests/chordalDecomposition.jl")
 end
 nothing
