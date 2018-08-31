@@ -24,7 +24,7 @@ function admmStep!(x::Vector{Float64}, s::Vector{Float64}, μ::Vector{Float64}, 
   pTime = @elapsed Projections.projectCompositeCone!(s, convexSets)
   # update dual variable μ
   @. μ = μ + ρ.*(s_tl - s)
-  projTime += pTime
+  return projTime += pTime
 end
 
 
@@ -46,7 +46,7 @@ end
 
     chordalInfo = QOCS.ChordalInfo(model)
     if settings.decompose
-      chordalDecomposition!(model,settings,chordalInfo)
+      graphTime = @elapsed chordalDecomposition!(model,settings,chordalInfo)
     end
     settings.verbose_timing && (graphTime = time() - graphTime_start)
     # create workspace variables
@@ -54,9 +54,8 @@ end
 
     # perform preprocessing steps (scaling, initial KKT factorization)
     ws.times.setupTime = @elapsed setup!(ws,settings);
-
+    settings.decompose && (ws.times.graphTime = graphTime)
     # instantiate variables
-    projTime = 0.
     numIter = 0
     status = :Unsolved
     cost = Inf
@@ -87,7 +86,7 @@ end
       @. δx = ws.x
       @. δy = ws.μ
 
-      admmStep!(
+      ws.times.projTime = admmStep!(
         ws.x, ws.s, ws.μ, ws.ν,
         x_tl, s_tl, ls,sol,
         ws.p.F, ws.p.q, ws.p.b, ws.ρVec,
@@ -183,7 +182,6 @@ end
 
 
 
-    ws.times.projTime = projTime
     ws.times.solverTime = time() - solverTime_start
     settings.verbose_timing && (ws.times.postTime = time()-ws.times.postTime)
 
