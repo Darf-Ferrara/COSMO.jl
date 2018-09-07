@@ -3,24 +3,23 @@ module Scaling
 using ..QOCS, SparseArrays, LinearAlgebra, Statistics
 export scaleRuiz!,reverseScaling!
 
-  function normKKTCols(P::SparseMatrixCSC{Float64,Int64},A::SparseMatrixCSC{Float64,Int64})
-      normPCols = [norm(P[:,i],Inf) for i in 1:size(P,2)]
-    normACols = [norm(A[:,i],Inf) for i in 1:size(A,2)]
-    normLeftPart = max.(normPCols,normACols)
-    AT = A'
-    normATCols = [norm(AT[:, i],Inf) for i in 1:size(A,1)]
-
-    return [normLeftPart;normATCols]
+  function colNorms!(normArr::Array{Float64,1},A::SparseMatrixCSC{Float64,Int64},N::Int64)
+    for i=1:N
+      normArr[i] = norm(view(A,:,i),Inf)
+    end
   end
 
-  function TwonormKKTCols(P::SparseMatrixCSC{Float64,Int64},A::SparseMatrixCSC{Float64,Int64})
-      normPCols = [norm(P[:,i],2) for i in 1:size(P,2)]
-    normACols = [norm(A[:,i],2) for i in 1:size(A,2)]
+  function normKKTCols!(δVec::Array{Float64,1},P::SparseMatrixCSC{Float64,Int64},A::SparseMatrixCSC{Float64,Int64},AT::SparseMatrixCSC{Float64,Int64},normPCols::Array{Float64,1},normACols::Array{Float64,1},normATCols::Array{Float64,1},m::Int64,n::Int64)
+    colNorms!(normPCols,P,n)
+    colNorms!(normACols,A,n)
     normLeftPart = max.(normPCols,normACols)
-    normATCols = [norm(A[i,:],2) for i in 1:size(A,1)]
+    AT[:,:] = permutedims(A)
+    colNorms!(normATCols,AT,m)
 
-    return [normLeftPart;normATCols]
+    δVec[:] = [normLeftPart;normATCols]
   end
+
+
 
   function limitScaling!(δVec::Union{Float64,Array{Float64,1}},set::QOCS.Settings)
     if length(δVec) > 1
@@ -48,8 +47,10 @@ export scaleRuiz!,reverseScaling!
     q = copy(ws.p.q)
     m = ws.p.m
     n = ws.p.n
+    AT = spzeros(n,m)
     c = 1.0
     sTemp = ones(n+m)
+    δVec = zeros(m+n)
     convexSets = ws.p.convexSets
 
     #initialize scaling matrices
@@ -61,13 +62,16 @@ export scaleRuiz!,reverseScaling!
       E = 0
       Etemp = 0
     end
-
+    normPCols = zeros(n)
+    normPCols2 = zeros(n)
+    normACols = zeros(n)
+    normATCols = zeros(m)
 
     for iii = 1:set.scaling
 
       # First step Ruiz
-      δVec = normKKTCols(P,A)
-      limitScaling!(δVec,set)
+      QOCS.Scaling.normKKTCols!(δVec,P,A,AT,normPCols,normACols,normATCols,m,n)
+      QOCS.Scaling.limitScaling!(δVec,set)
       δVec = sqrt.(δVec)
       sTemp = 1.0 ./δVec
 
@@ -76,7 +80,7 @@ export scaleRuiz!,reverseScaling!
       if m == 0
         Etemp = 0
       else
-        Etemp = sparse(Diagonal(sTemp[n+1:end]))
+        Etemp = sparse(Diagonal(sTemp[n+1:n+m]))
       end
 
       # Scale data
@@ -87,14 +91,15 @@ export scaleRuiz!,reverseScaling!
       # Update equilibrium matrices D and E
       D[:,:] = Dtemp*D
       E[:,:] = Etemp*E
-
       # Second step cost normalization
+      #colNorms!(normPCols2,P,n)
+      #norm_P_cols = mean(normPCols2)
       norm_P_cols = mean([norm(P[:,i],Inf) for i in 1:size(P,2)])
       inf_norm_q = norm(q,Inf)
       if norm_P_cols != 0. && inf_norm_q != 0.
-        limitScaling!(inf_norm_q,set)
+        QOCS.Scaling.limitScaling!(inf_norm_q,set)
         scale_cost = maximum([inf_norm_q norm_P_cols])
-        limitScaling!(scale_cost,set)
+        QOCS.Scaling.limitScaling!(scale_cost,set)
         scale_cost = 1.0 ./ scale_cost
         c_temp = scale_cost
 
