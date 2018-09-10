@@ -131,8 +131,7 @@ export SolverResult, updateResults!,loadMeszarosData,getMeszarosDim,meszarosFile
     println("$(iii)/$(numProblems): $(problem) completed.")
     for jjj=1:length(resData)
       r = resData[jjj]
-      r.scalingON ? si = " - scaled" : si = " - unscaled"
-      println(" "^6*"$(r.solverName)$(si): Iterations: $(r.iter[r.ind]), Cost:$(r.objVal[r.ind]), Status:$(r.status[r.ind]), Runtime: $(r.runTime[r.ind])")
+      println(" "^6*"$(r.solverName): Iterations: $(r.iter[r.ind]), Cost:$(r.objVal[r.ind]), Status:$(r.status[r.ind]), Runtime: $(r.runTime[r.ind])")
     end
   end
 

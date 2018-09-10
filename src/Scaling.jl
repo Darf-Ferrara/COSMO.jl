@@ -17,6 +17,7 @@ export scaleRuiz!,reverseScaling!
     colNorms!(normATCols,AT,m)
 
     δVec[:] = [normLeftPart;normATCols]
+    nothing
   end
 
 
