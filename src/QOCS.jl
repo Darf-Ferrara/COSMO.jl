@@ -6,6 +6,7 @@ export optimize!, reset!, assemble!, warmStart!, set!, Settings, Model, Result, 
 using SparseArrays,LinearAlgebra
 
 include("./Helper.jl")
+include("./LinAlg.jl")
 include("./Sets.jl")
 include("./Types.jl")
 include("./KKT.jl")
@@ -20,7 +21,7 @@ include("./Graphs.jl")
 include("./Trees.jl")
 include("./ChordalSparsity.jl")
 
-using .Projections, .Scaling, .Parameters, .Infeasibility, .Residuals, .Printing, .Setup, .Graphs, .Trees, .ChordalSparsity
+using .Projections, .Scaling, .Parameters, .Infeasibility, .Residuals, .Printing, .Setup, .Graphs, .Trees, .ChordalSparsity, .LinAlg
 include("./Solver.jl")
 include("./Interface.jl")
 
