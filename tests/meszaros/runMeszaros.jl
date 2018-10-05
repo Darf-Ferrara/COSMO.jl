@@ -27,7 +27,7 @@ filter!(x->!in(x,excludeProbs),fileNames)
 =#
 
 # to begin with only look at first nn problems
-fileNames = fileNames[1:1]
+fileNames = fileNames[90:90]
 
 resCost = zeros(length(fileNames),2)
 resIter = zeros(length(fileNames),1)
@@ -62,14 +62,16 @@ for file in fileNames # ["QSCTAP2", "QSCTAP2"] # fileNames
       costTrue = NaN
     end
 
+    #=
     Pa, qa, r, Aa, K = Converter.convertProblem(data)
     ba = zeros(size(Aa, 1))
     qa = full(qa[:, 1])
     ba = full(ba)
     println("  |  nnz: $(nnz(Pa) + nnz(Aa))")
     println("----------------------------------------")
+    =#
 
-    settings = OSSDPSettings(adaptive_rho=true, max_iter=5000, verbose=true, checkTermination=200, scaling=2)
+    settings = OSSDPSettings(adaptive_rho=false, max_iter=2, verbose=true, checkTermination=1, scaling=0, eps_abs=1e-3, eps_rel=1e-3)
     # print("Running QOCS:")
     res, tt = OSSDP.solve(data["P"],
      data["q"][:,1], data["A"],
@@ -81,8 +83,8 @@ for file in fileNames # ["QSCTAP2", "QSCTAP2"] # fileNames
 
     m_ = OSQP.Model()
     OSQP.setup!(m_; P=data["P"], q=data["q"][:], A=data["A"], l=data["l"][:], u=data["u"][:],
-          verbose=true, max_iter=5000, check_termination=200,
-          scaling=2, adaptive_rho=true, adaptive_rho_interval=40)
+          verbose=true, max_iter=2, check_termination=20,
+          scaling=0, adaptive_rho=false, adaptive_rho_interval=40)
     # print("Running OSQP:")
     resOSQP = OSQP.solve!(m_)
 
